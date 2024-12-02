@@ -1,5 +1,6 @@
 import glob
 import os
+from typing import List, Tuple, Union
 
 import numpy as np
 import torch
@@ -7,12 +8,12 @@ from torch.utils.data import Dataset
 
 
 class ReservoirDataset(Dataset):
-    def __init__(self, directory, verbose=True):
-        self.inputs = []
-        self.targets = []
+    def __init__(self, directory: str, verbose: bool = True) -> None:
+        self.inputs: List[torch.Tensor] = []
+        self.targets: List[torch.Tensor] = []
         self.load_and_process_data(directory, verbose)
 
-    def load_and_process_data(self, directory, verbose):
+    def load_and_process_data(self, directory: str, verbose: bool) -> None:
         file_list = glob.glob(os.path.join(directory, "*.npz"))
         target_shape = (96, 200)  # Shape for input features
         target_output_shape = (96, 200, 24)  # Shape for target (padded to this shape)
@@ -25,8 +26,8 @@ class ReservoirDataset(Dataset):
             file_count += 1
 
             with np.load(file_name, allow_pickle=True) as data:
-                input_features = []
-                target = None
+                input_features: List[torch.Tensor] = []
+                target: Union[torch.Tensor, None] = None
                 perf_interval = data.get("perf_interval", None)
                 if perf_interval is None or len(perf_interval) != 2:
                     print("Invalid perf_interval format. Skipping file.")
@@ -60,17 +61,19 @@ class ReservoirDataset(Dataset):
                     self.inputs.append(combined_inputs)
                     self.targets.append(target)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.inputs)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         inputs = self.inputs[idx]
         targets = self.targets[idx]
 
         return inputs, targets
 
     @staticmethod
-    def pad_to_shape(arr, target_shape, fill_value=0):
+    def pad_to_shape(
+        arr: np.ndarray, target_shape: Tuple[int, int], fill_value: int = 0
+    ) -> np.ndarray:
         pad_width = [
             (0, max(0, target - arr.shape[i])) for i, target in enumerate(target_shape)
         ]
@@ -78,7 +81,9 @@ class ReservoirDataset(Dataset):
         return padded_arr
 
     @staticmethod
-    def pad_or_reshape_to_shape(arr, target_shape, fill_value=0):
+    def pad_or_reshape_to_shape(
+        arr: np.ndarray, target_shape: Tuple[int, int, int], fill_value: int = 0
+    ) -> np.ndarray:
         if arr.shape == target_shape:
             return arr
         elif arr.shape[0] < target_shape[0]:
@@ -90,6 +95,8 @@ class ReservoirDataset(Dataset):
             return arr[: target_shape[0], ...]
 
     @staticmethod
-    def create_filled_array(scalar, target_shape):
+    def create_filled_array(
+        scalar: Union[int, float], target_shape: Tuple[int, int]
+    ) -> np.ndarray:
         filled_array = np.full(target_shape, scalar, dtype=np.float32)
         return filled_array
