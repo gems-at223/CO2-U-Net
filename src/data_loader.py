@@ -13,13 +13,11 @@ class ReservoirDataset(Dataset):
         self.load_and_process_data(directory, verbose)
 
     def load_and_process_data(self, directory, verbose):
-        file_list = glob.glob(directory)
+        file_list = glob.glob(os.path.join(directory, "*.npz"))
         target_shape = (96, 200)  # Shape for input features
         target_output_shape = (96, 200, 24)  # Shape for target (padded to this shape)
         file_count = 0
-        # Loop through each file in the directory
         for file_name in file_list:
-            # print every 10% of the way
             if file_count % 10 == 0 and verbose:
                 print(
                     f"Processing {file_name}: {file_count / len(file_list) * 100:.2f}%"
@@ -29,8 +27,6 @@ class ReservoirDataset(Dataset):
             with np.load(file_name, allow_pickle=True) as data:
                 input_features = []
                 target = None
-
-                # Extract the perf_interval from the data
                 perf_interval = data.get("perf_interval", None)
                 if perf_interval is None or len(perf_interval) != 2:
                     print("Invalid perf_interval format. Skipping file.")
@@ -39,15 +35,12 @@ class ReservoirDataset(Dataset):
 
                 # Create a new feature map of size (96, 200)
                 feature_map = np.zeros(target_shape, dtype=int)
-                feature_map[start : end + 1, :] = (
-                    1  # Set the cells corresponding to perf_interval to 1
-                )
+                feature_map[start : end + 1, :] = 1
 
                 for var_name in sorted(data.keys()):
                     array = data[var_name]
 
                     if var_name == "gas_saturation":
-                        # Pad or reshape the target to match the expected shape
                         target = self.pad_or_reshape_to_shape(
                             array, target_output_shape
                         )
@@ -60,7 +53,6 @@ class ReservoirDataset(Dataset):
                             continue
                         input_features.append(torch.from_numpy(array).float())
 
-                # Append the feature_map to the input features
                 input_features.append(torch.from_numpy(feature_map).float())
 
                 if target is not None:
@@ -87,7 +79,6 @@ class ReservoirDataset(Dataset):
 
     @staticmethod
     def pad_or_reshape_to_shape(arr, target_shape, fill_value=0):
-        # Pad or reshape the array to match the target shape
         if arr.shape == target_shape:
             return arr
         elif arr.shape[0] < target_shape[0]:
