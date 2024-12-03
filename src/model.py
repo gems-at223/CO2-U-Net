@@ -83,7 +83,7 @@ class UNet(nn.Module):
                 out_channels, out_channels, 3, padding=1, padding_mode="replicate"
             ),
             nn.ELU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size=2, stride=2),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
         return block
 
