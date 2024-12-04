@@ -20,6 +20,7 @@ def train_model(
     plot_losses = PlotLosses()
 
     os.makedirs(save_dir, exist_ok=True)
+    model = model.to(device)
 
     for epoch in range(num_epochs):
         logs = {}

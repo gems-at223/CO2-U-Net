@@ -39,10 +39,10 @@ class UNet(nn.Module):
         self.attention4 = SelfAttention(512)
 
         self.bottleneck = nn.Sequential(
-            nn.Conv2d(512, 1024, 3, padding=1, padding_mode="replicate"),
-            nn.ELU(),
-            nn.Conv2d(1024, 1024, 3, padding=1, padding_mode="replicate"),
-            nn.ELU(),
+            nn.Conv2d(512, 1024, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(1024, 1024, 3, padding=1),
+            nn.ReLU(),
         )
 
         self.up1 = self.expand_block(1536, 512)  # 1024 from bottleneck + 512 from down4
@@ -75,14 +75,10 @@ class UNet(nn.Module):
 
     def contract_block(self, in_channels: int, out_channels: int) -> nn.Sequential:
         block = nn.Sequential(
-            nn.Conv2d(
-                in_channels, out_channels, 3, padding=1, padding_mode="replicate"
-            ),
-            nn.ELU(),
-            nn.Conv2d(
-                out_channels, out_channels, 3, padding=1, padding_mode="replicate"
-            ),
-            nn.ELU(),
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(out_channels, out_channels, 3, padding=1),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         return block
@@ -90,9 +86,9 @@ class UNet(nn.Module):
     def expand_block(self, in_channels: int, out_channels: int) -> nn.Sequential:
         block = nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv2d(out_channels, out_channels, 3, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
         )
         return block
 
